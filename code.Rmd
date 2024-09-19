@@ -954,131 +954,261 @@ rm(list = ls())
 ```
 
 ```{r}
-#step 2 for interaction
-# Load necessary libraries
+#step 2 for interaction coffee
+# Load libraries
 library(lme4)
-library(lmerTest)
+library(lmerTest)  # Provides p-values for fixed effects
+library(dplyr)
 
-# Load the dataset
-DataSet1 <- read.csv(file = 'C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\data\\data_for_test\\tea_coffee.csv')
+# Load the dataset (replace 'your_dataset.csv' with your actual dataset)
+df <- read.csv(file = 'C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\data\\data_for_test\\tea_coffee.csv')
 
-# Define required columns for tea and coffee
-required_columns_tea <- c("rsfMRI_Component7", "rsfMRI_Component11", "rsfMRI_Component14", 
-                          "rsfMRI_Component21", "rsfMRI_Component12", "Assessment_0", "APOE_all", 
-                          "T40_Gcar", "family_history_AD", "Age_Baseline", "Sex", "SmokingY08", 
-                          "AlcoholY08", "BMI_Y08andY12andY14_mean", "Townsend", "StandTea_mean")
-
+# List of required columns for the analysis
 required_columns_coffee <- c("rsfMRI_Component7", "rsfMRI_Component11", "rsfMRI_Component14", 
                              "rsfMRI_Component21", "rsfMRI_Component12", "Assessment_0", "APOE_all", 
                              "T40_Gcar", "family_history_AD", "Age_Baseline", "Sex", "SmokingY08", 
                              "AlcoholY08", "BMI_Y08andY12andY14_mean", "Townsend", "FilterCoffee_mean")
 
-# Create complete datasets for tea and coffee
-DataSet1_complete_tea <- DataSet1[complete.cases(DataSet1[, required_columns_tea]), ]
-DataSet1_complete_coffee <- DataSet1[complete.cases(DataSet1[, required_columns_coffee]), ]
-
-# Define dependent variables and predictors
-dependent_vars <- c("rsfMRI_Component7", "rsfMRI_Component11", "rsfMRI_Component14", "rsfMRI_Component21", "rsfMRI_Component12")
-predictors <- c("StandTea_mean", "FilterCoffee_mean")
-
-# Function to fit the model and extract coefficients for multiple interaction terms
-fit_and_extract <- function(dep_var, predictor, interaction_terms, data, factor_label, factor_value) {
-  # Create the interaction part of the formula dynamically
-  interaction_formula <- paste(interaction_terms, collapse = " + ")
-  
-  formula <- as.formula(paste(dep_var, "~ Assessment_0 + APOE_all + T40_Gcar + family_history_AD + 
-                              Age_Baseline + Sex + SmokingY08 + AlcoholY08 + 
-                              BMI_Y08andY12andY14_mean + Townsend +", predictor, "+", interaction_formula, "+ 
-                              (1 | Assessment_0)"))
-  
-  model <- lmer(formula, data = data, REML = FALSE)
-  summary_model <- summary(model)
-  
-  # Ensure the predictor exists in the coefficients
-  if (predictor %in% rownames(summary_model$coefficients)) {
-    predictor_coef <- summary_model$coefficients[predictor, ]
-    
-    return(list(
-      Dependent = dep_var,
-      Predictor = predictor,
-      Estimate = predictor_coef["Estimate"],
-      StdError = predictor_coef["Std. Error"],
-      TValue = predictor_coef["t value"],
-      PValue = predictor_coef["Pr(>|t|)"],
-      Factor_Label = factor_label,
-      Factor_Value = factor_value
-    ))
-  } else {
-    # Return NA if the predictor isn't found
-    return(list(
-      Dependent = dep_var,
-      Predictor = predictor,
-      Estimate = NA,
-      StdError = NA,
-      TValue = NA,
-      PValue = NA,
-      Factor_Label = factor_label,
-      Factor_Value = factor_value
-    ))
-  }
+# Ensure that the required columns exist in the dataset
+missing_columns <- setdiff(required_columns_coffee, colnames(df))
+if (length(missing_columns) > 0) {
+    stop(paste("The following required columns are missing from the dataset:", paste(missing_columns, collapse = ", ")))
 }
 
-# Run the loop to test each combination and store results for selected interactions
-results <- list()
-index <- 1
+# Create a complete dataset by removing rows with NA in the required columns
+df <- df[complete.cases(df[, required_columns_coffee]), ]
 
-for (dep_var in dependent_vars) {
-  for (predictor in predictors) {
-    
-    # Test both predictors for APOE_all and family_history_AD
-    if (predictor == "FilterCoffee_mean") {
-      interaction_terms <- c("FilterCoffee_mean * APOE_all", "FilterCoffee_mean * family_history_AD")
-      
-      # Test for both APOE_all = 0 and APOE_all = 1
-      for (APOE_all_val in c(0, 1)) {
-        data_subset <- subset(DataSet1_complete_coffee, APOE_all == APOE_all_val)
-        result <- fit_and_extract(dep_var, predictor, interaction_terms, data_subset, "APOE_all", APOE_all_val)
-        results[[index]] <- result
-        index <- index + 1
-      }
-      
-      # Test for both family_history_AD = 0 and family_history_AD = 1
-      for (family_history_val in c(0, 1)) {
-        data_subset <- subset(DataSet1_complete_coffee, family_history_AD == family_history_val)
-        result <- fit_and_extract(dep_var, predictor, interaction_terms, data_subset, "family_history_AD", family_history_val)
-        results[[index]] <- result
-        index <- index + 1
-      }
-      
-    } else if (predictor == "StandTea_mean") {
-      interaction_terms <- c("StandTea_mean * APOE_all", "StandTea_mean * family_history_AD")
-      
-      # Test for both APOE_all = 0 and APOE_all = 1
-      for (APOE_all_val in c(0, 1)) {
-        data_subset <- subset(DataSet1_complete_tea, APOE_all == APOE_all_val)
-        result <- fit_and_extract(dep_var, predictor, interaction_terms, data_subset, "APOE_all", APOE_all_val)
-        results[[index]] <- result
-        index <- index + 1
-      }
-      
-      # Test for both family_history_AD = 0 and family_history_AD = 1
-      for (family_history_val in c(0, 1)) {
-        data_subset <- subset(DataSet1_complete_tea, family_history_AD == family_history_val)
-        result <- fit_and_extract(dep_var, predictor, interaction_terms, data_subset, "family_history_AD", family_history_val)
-        results[[index]] <- result
-        index <- index + 1
-      }
+# Ensure that factors are treated correctly
+df$APOE_all <- as.factor(df$APOE_all)
+df$T40_Gcar <- as.factor(df$T40_Gcar)
+df$family_history_AD <- as.factor(df$family_history_AD)
+df$Assessment_0 <- as.factor(df$Assessment_0)  # For random effects
+
+# List of rsfMRI components to loop through
+rsfMRI_components <- c("rsfMRI_Component7", "rsfMRI_Component11", "rsfMRI_Component14", 
+                       "rsfMRI_Component21", "rsfMRI_Component12")
+
+# Initialize an empty data frame to store results
+all_results_df <- data.frame()
+
+### Loop 1: Testing by family_history_AD ###
+for (component in rsfMRI_components) {
+    # Check if the component exists in the dataset
+    if (!component %in% colnames(df)) {
+        warning(paste("Component", component, "is missing in the dataset. Skipping this component."))
+        next
     }
-  }
+  
+    # Dynamically update the formula for each component
+    formula <- as.formula(paste(component, "~ FilterCoffee_mean + (1 | Assessment_0)"))
+
+    # Loop over family_history_AD
+    for (family_history in unique(df$family_history_AD)) {
+        # Subset the data for the current family_history_AD
+        df_subset <- subset(df, family_history_AD == family_history)
+        
+        if (nrow(df_subset) > 0) {
+            # Fit the mixed model
+            model <- lmer(formula, data = df_subset, REML = FALSE)  # Use ML method
+            summary_model <- summary(model)$coefficients
+        } else {
+            summary_model <- data.frame(Estimate = NA, `Std. Error` = NA, `Pr(>|t|)` = NA)
+        }
+
+        # Filter for "FilterCoffee_mean" term only (exclude intercept)
+        summary_model <- summary_model[rownames(summary_model) == "FilterCoffee_mean", , drop = FALSE]
+
+        # Create a data frame to store results for the current family_history_AD
+        results_df <- data.frame(
+            rsfMRI_Component = rep(component, nrow(summary_model)),
+            Variable = "family_history_AD",
+            Group = rep(family_history, nrow(summary_model)),
+            Term = rownames(summary_model),
+            Estimate = summary_model[, "Estimate"],
+            Std_Error = summary_model[, "Std. Error"],
+            p_value = summary_model[, "Pr(>|t|)"]
+        )
+
+        # Combine the current results with the overall results
+        all_results_df <- rbind(all_results_df, results_df)
+    }
 }
 
-# Convert results to a data frame for better readability
-results_df <- do.call(rbind, lapply(results, as.data.frame))
+### Loop 2: Testing by APOE_all ###
+for (component in rsfMRI_components) {
+    # Check if the component exists in the dataset
+    if (!component %in% colnames(df)) {
+        warning(paste("Component", component, "is missing in the dataset. Skipping this component."))
+        next
+    }
+  
+    # Dynamically update the formula for each component
+    formula <- as.formula(paste(component, "~ FilterCoffee_mean + (1 | Assessment_0)"))
 
-# Write the results to a CSV file
-write.csv(results_df, "C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\output\\tea_coffee\\interactions_report.csv", na='', row.names=FALSE)
+    # Loop over APOE_all
+    for (APOE in unique(df$APOE_all)) {
+        # Subset the data for the current APOE_all
+        df_subset <- subset(df, APOE_all == APOE)
+        
+        if (nrow(df_subset) > 0) {
+            # Fit the mixed model
+            model <- lmer(formula, data = df_subset, REML = FALSE)  # Use ML method
+            summary_model <- summary(model)$coefficients
+        } else {
+            summary_model <- data.frame(Estimate = NA, `Std. Error` = NA, `Pr(>|t|)` = NA)
+        }
 
-# Clean up the environment
-rm(list=ls())
+        # Filter for "FilterCoffee_mean" term only (exclude intercept)
+        summary_model <- summary_model[rownames(summary_model) == "FilterCoffee_mean", , drop = FALSE]
 
+        # Create a data frame to store results for the current APOE_all
+        results_df <- data.frame(
+            rsfMRI_Component = rep(component, nrow(summary_model)),
+            Variable = "APOE_all",
+            Group = rep(APOE, nrow(summary_model)),
+            Term = rownames(summary_model),
+            Estimate = summary_model[, "Estimate"],
+            Std_Error = summary_model[, "Std. Error"],
+            p_value = summary_model[, "Pr(>|t|)"]
+        )
+
+        # Combine the current results with the overall results
+        all_results_df <- rbind(all_results_df, results_df)
+    }
+}
+
+# Write the combined results to a CSV file
+write.csv(all_results_df, "C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\output\\tea_coffee\\interactions_Coffee_all_components.csv", 
+          na = '', row.names = FALSE)
+rm(list = ls())
+```
+
+```{r}
+#step 2 for interaction tea
+# Load libraries
+library(lme4)
+library(lmerTest)  # Provides p-values for fixed effects
+library(dplyr)
+
+# Load the dataset (replace 'your_dataset.csv' with your actual dataset)
+df <- read.csv(file = 'C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\data\\data_for_test\\tea_coffee.csv')
+
+# List of required columns for the analysis
+required_columns_tea <- c("rsfMRI_Component7", "rsfMRI_Component11", "rsfMRI_Component14", 
+                          "rsfMRI_Component21", "rsfMRI_Component12", "Assessment_0", "APOE_all", 
+                          "T40_Gcar", "family_history_AD", "Age_Baseline", "Sex", "SmokingY08", 
+                          "AlcoholY08", "BMI_Y08andY12andY14_mean", "Townsend", "StandTea_mean")
+
+# Ensure that the required columns exist in the dataset
+missing_columns <- setdiff(required_columns_tea, colnames(df))
+if (length(missing_columns) > 0) {
+    stop(paste("The following required columns are missing from the dataset:", paste(missing_columns, collapse = ", ")))
+}
+
+# Create a complete dataset by removing rows with NA in the required columns
+df <- df[complete.cases(df[, required_columns_tea]), ]
+
+# Ensure that factors are treated correctly
+df$APOE_all <- as.factor(df$APOE_all)
+df$T40_Gcar <- as.factor(df$T40_Gcar)
+df$family_history_AD <- as.factor(df$family_history_AD)
+df$Assessment_0 <- as.factor(df$Assessment_0)  # For random effects
+
+# List of rsfMRI components to loop through
+rsfMRI_components <- c("rsfMRI_Component7", "rsfMRI_Component11", "rsfMRI_Component14", 
+                       "rsfMRI_Component21", "rsfMRI_Component12")
+
+# Initialize an empty data frame to store results
+all_results_df <- data.frame()
+
+### Loop 1: Testing by family_history_AD ###
+for (component in rsfMRI_components) {
+    # Check if the component exists in the dataset
+    if (!component %in% colnames(df)) {
+        warning(paste("Component", component, "is missing in the dataset. Skipping this component."))
+        next
+    }
+  
+    # Dynamically update the formula for each component
+    formula <- as.formula(paste(component, "~ StandTea_mean + (1 | Assessment_0)"))
+
+    # Loop over family_history_AD
+    for (family_history in unique(df$family_history_AD)) {
+        # Subset the data for the current family_history_AD
+        df_subset <- subset(df, family_history_AD == family_history)
+        
+        if (nrow(df_subset) > 0) {
+            # Fit the mixed model
+            model <- lmer(formula, data = df_subset, REML = FALSE)  # Use ML method
+            summary_model <- summary(model)$coefficients
+        } else {
+            summary_model <- data.frame(Estimate = NA, `Std. Error` = NA, `Pr(>|t|)` = NA)
+        }
+
+        # Filter for "StandTea_mean" term only (exclude intercept)
+        summary_model <- summary_model[rownames(summary_model) == "StandTea_mean", , drop = FALSE]
+
+        # Create a data frame to store results for the current family_history_AD
+        results_df <- data.frame(
+            rsfMRI_Component = rep(component, nrow(summary_model)),
+            Variable = "family_history_AD",
+            Group = rep(family_history, nrow(summary_model)),
+            Term = rownames(summary_model),
+            Estimate = summary_model[, "Estimate"],
+            Std_Error = summary_model[, "Std. Error"],
+            p_value = summary_model[, "Pr(>|t|)"]
+        )
+
+        # Combine the current results with the overall results
+        all_results_df <- rbind(all_results_df, results_df)
+    }
+}
+
+### Loop 2: Testing by APOE_all ###
+for (component in rsfMRI_components) {
+    # Check if the component exists in the dataset
+    if (!component %in% colnames(df)) {
+        warning(paste("Component", component, "is missing in the dataset. Skipping this component."))
+        next
+    }
+  
+    # Dynamically update the formula for each component
+    formula <- as.formula(paste(component, "~ StandTea_mean + (1 | Assessment_0)"))
+
+    # Loop over APOE_all
+    for (APOE in unique(df$APOE_all)) {
+        # Subset the data for the current APOE_all
+        df_subset <- subset(df, APOE_all == APOE)
+        
+        if (nrow(df_subset) > 0) {
+            # Fit the mixed model
+            model <- lmer(formula, data = df_subset, REML = FALSE)  # Use ML method
+            summary_model <- summary(model)$coefficients
+        } else {
+            summary_model <- data.frame(Estimate = NA, `Std. Error` = NA, `Pr(>|t|)` = NA)
+        }
+
+        # Filter for "StandTea_mean" term only (exclude intercept)
+        summary_model <- summary_model[rownames(summary_model) == "StandTea_mean", , drop = FALSE]
+
+        # Create a data frame to store results for the current APOE_all
+        results_df <- data.frame(
+            rsfMRI_Component = rep(component, nrow(summary_model)),
+            Variable = "APOE_all",
+            Group = rep(APOE, nrow(summary_model)),
+            Term = rownames(summary_model),
+            Estimate = summary_model[, "Estimate"],
+            Std_Error = summary_model[, "Std. Error"],
+            p_value = summary_model[, "Pr(>|t|)"]
+        )
+
+        # Combine the current results with the overall results
+        all_results_df <- rbind(all_results_df, results_df)
+    }
+}
+
+# Write the combined results to a CSV file
+write.csv(all_results_df, "C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\output\\tea_coffee\\interactions_Tea_all_components.csv", 
+          na = '', row.names = FALSE)
+rm(list = ls())
 ```
