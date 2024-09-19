@@ -1030,9 +1030,19 @@ index <- 1
 for (dep_var in dependent_vars) {
   for (predictor in predictors) {
     
+    # Test both predictors for APOE_all and family_history_AD
     if (predictor == "FilterCoffee_mean") {
-      # Test FilterCoffee_mean interactions with APOE_all and family_history_AD for both factor=0 and factor=1
       interaction_terms <- c("FilterCoffee_mean * APOE_all", "FilterCoffee_mean * family_history_AD")
+      
+      # Test for both APOE_all = 0 and APOE_all = 1
+      for (APOE_all_val in c(0, 1)) {
+        data_subset <- subset(DataSet1_complete_coffee, APOE_all == APOE_all_val)
+        result <- fit_and_extract(dep_var, predictor, interaction_terms, data_subset, "APOE_all", APOE_all_val)
+        results[[index]] <- result
+        index <- index + 1
+      }
+      
+      # Test for both family_history_AD = 0 and family_history_AD = 1
       for (family_history_val in c(0, 1)) {
         data_subset <- subset(DataSet1_complete_coffee, family_history_AD == family_history_val)
         result <- fit_and_extract(dep_var, predictor, interaction_terms, data_subset, "family_history_AD", family_history_val)
@@ -1041,11 +1051,20 @@ for (dep_var in dependent_vars) {
       }
       
     } else if (predictor == "StandTea_mean") {
-      # Test StandTea_mean interaction with APOE_all for both factor=0 and factor=1
-      interaction_terms <- c("StandTea_mean * APOE_all")
+      interaction_terms <- c("StandTea_mean * APOE_all", "StandTea_mean * family_history_AD")
+      
+      # Test for both APOE_all = 0 and APOE_all = 1
       for (APOE_all_val in c(0, 1)) {
         data_subset <- subset(DataSet1_complete_tea, APOE_all == APOE_all_val)
         result <- fit_and_extract(dep_var, predictor, interaction_terms, data_subset, "APOE_all", APOE_all_val)
+        results[[index]] <- result
+        index <- index + 1
+      }
+      
+      # Test for both family_history_AD = 0 and family_history_AD = 1
+      for (family_history_val in c(0, 1)) {
+        data_subset <- subset(DataSet1_complete_tea, family_history_AD == family_history_val)
+        result <- fit_and_extract(dep_var, predictor, interaction_terms, data_subset, "family_history_AD", family_history_val)
         results[[index]] <- result
         index <- index + 1
       }
