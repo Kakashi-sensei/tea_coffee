@@ -21,9 +21,9 @@ df$Assessment_0 <- as.factor(df$Assessment_0)
 df$EID <- as.factor(df$EID)
 results <- data.frame()
 # List of variables to test
-test_vars <- c("FilterCoffee_mean", "StandTea_mean")
+test_vars <- c("FilterCoffee_mean", "StandTea_mean", "GreenTea_mean")
 
-dependent_vars <- c("rsfMRI_Component7", "rsfMRI_Component11", "rsfMRI_Component12", "rsfMRI_Component14", "rsfMRI_Component21")
+dependent_vars <- c("rsfMRI_Component4", "rsfMRI_Component7","rsfMRI_Component8", "rsfMRI_Component11", "rsfMRI_Component12", "rsfMRI_Component14", "rsfMRI_Component21")
 
 # Double loop through each dependent and test variable and fit the model
 for (dep_var in dependent_vars) {
@@ -69,7 +69,8 @@ for (var in factor_vars) {
 rm(factor_vars,var)
 
 # Scale all continuous variables
-scale_vars <- c("FilterCoffee_mean", "StandTea_mean", "rsfMRI_Component7", "rsfMRI_Component11", "rsfMRI_Component12", "rsfMRI_Component14", "rsfMRI_Component21")
+scale_vars <- c("GreenTea_mean", "FilterCoffee_mean", "StandTea_mean","rsfMRI_Component4","rsfMRI_Component7",
+                "rsfMRI_Component8", "rsfMRI_Component11", "rsfMRI_Component12", "rsfMRI_Component14", "rsfMRI_Component21")
 
 for (var in scale_vars) {
   df[[var]] <- as.numeric(df[[var]])
@@ -77,10 +78,10 @@ for (var in scale_vars) {
 rm(scale_vars, var)
 
 # Define the dependent variables
-dependent_vars <- c("rsfMRI_Component7", "rsfMRI_Component11", "rsfMRI_Component12", "rsfMRI_Component14", "rsfMRI_Component21")
+dependent_vars <- c("rsfMRI_Component4","rsfMRI_Component7","rsfMRI_Component8", "rsfMRI_Component11", "rsfMRI_Component12", "rsfMRI_Component14", "rsfMRI_Component21")
 
 # List of variables to test
-test_vars <- c("FilterCoffee_mean", "StandTea_mean")
+test_vars <- c("FilterCoffee_mean", "StandTea_mean", "GreenTea_mean")
 
 # List of factors
 factor_vars <- c("APOE_all", "T40_Gcar", "family_history_AD")
@@ -199,6 +200,130 @@ library(lmerTest)
 library(ggplot2)
 library(ggthemes)  # for Calibri font
 # maineffects images
+# IC4,8 with green tea
+# IC 4 first
+df<-read.csv(file = 'C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\data\\data_for_test\\tea_coffee.csv')
+
+selected_vars <- df[c("GreenTea_mean", "rsfMRI_Component4", "APOE_all", "T40_Gcar", "family_history_AD", "Age_Baseline", "Sex", "BMI_Y08andY12andY14_mean" , "AlcoholY08" , "SmokingY08", "Townsend", "Assessment_0")]
+df_clean <- df[complete.cases(selected_vars), ]
+
+# Fit the model -- factor all factor variables
+factor_vars <- c("AlcoholY08", "SmokingY08", "Assessment_0", "EID", "APOE_all", "T40_Gcar", "family_history_AD")
+for (var in factor_vars) {
+  df_clean[[var]] <- as.factor(df_clean[[var]])
+}
+rm(factor_vars,var)
+
+rm(selected_vars)
+# Scale all continuous variables
+scale_vars <- c("GreenTea_mean", "rsfMRI_Component4", "Age_Baseline", "BMI_Y08andY12andY14_mean")
+
+# Fit the model for rsfMRI_Component21
+formula <- as.formula("rsfMRI_Component4 ~ APOE_all + T40_Gcar + family_history_AD + Age_Baseline + Sex + BMI_Y08andY12andY14_mean + AlcoholY08 + SmokingY08 + Townsend + GreenTea_mean + (1 | Assessment_0)")
+model_rsFMRI <- lmer(formula, data = df_clean, REML = FALSE)
+
+# Generate predicted values
+model_rows <- complete.cases(model.frame(model_rsFMRI))
+predicted_values_rsFMRI <- rep(NA, nrow(df_clean))
+predicted_values_rsFMRI[model_rows] <- predict(model_rsFMRI, re.form = NA)
+
+# Add predicted values to df_clean
+df_clean$predicted_rsFMRI_Component21 <- predicted_values_rsFMRI
+
+# Create the plot
+plot_title <- "Extrastriate Visual Network (IC4)"
+p <- ggplot(df_clean, aes(x = StandTea_mean, y = predicted_rsFMRI_Component21)) +
+    geom_point(shape = 21, size = 24, stroke = 2, colour = "black", fill = "gray") +
+    geom_smooth(method = "lm", color = "black", size = 2, se = FALSE) +
+    labs(
+        title = plot_title,
+        x = "Green Tea Consumption (Cups/Mugs/250ml)",
+        y = "Network Connectivity Strength (Z-score)"
+    ) +
+    theme_minimal() +
+    theme(
+        text = element_text(size = 48, family = "Calibri"),
+        axis.title = element_text(size = 60, family = "Calibri"),
+        plot.title = element_text(size = 60, hjust = 0.5),
+        axis.text = element_text(size = 60),
+        panel.border = element_rect(colour = "black", fill = NA, size = 10),
+        axis.ticks = element_line(size = 10),
+        axis.ticks.length = unit(48, "pt"),
+        legend.text = element_text(size = 48),
+        legend.position = c(0.8, 0.8),
+        legend.background = element_blank(),
+        legend.key = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()
+    )
+
+# Save the plot
+file_path <- "C:/Users/timothy/OneDrive/Documents/ISU/food_project/output/tea_coffee/figures/maineffects_Gtea_rsFMRI_Component4.tiff"
+ggsave(file_path, plot = p, width = 22.22, height = 27.78, units = "in", dpi = 72)
+
+# Remove all objects except for 'df'
+rm(list = setdiff(ls(), "df"))
+
+#IC8 next
+selected_vars <- df[c("GreenTea_mean", "rsfMRI_Component8", "APOE_all", "T40_Gcar", "family_history_AD", "Age_Baseline", "Sex", "BMI_Y08andY12andY14_mean" , "AlcoholY08" , "SmokingY08", "Townsend", "Assessment_0")]
+df_clean <- df[complete.cases(selected_vars), ]
+
+# Fit the model -- factor all factor variables
+factor_vars <- c("AlcoholY08", "SmokingY08", "Assessment_0", "EID", "APOE_all", "T40_Gcar", "family_history_AD")
+for (var in factor_vars) {
+  df_clean[[var]] <- as.factor(df_clean[[var]])
+}
+rm(factor_vars,var)
+
+rm(selected_vars)
+# Scale all continuous variables
+scale_vars <- c("GreenTea_mean", "rsfMRI_Component8", "BMI_Y08andY12andY14_mean", "Age_Baseline")
+
+# Fit the model for rsfMRI_Component7
+formula <- as.formula("rsfMRI_Component8 ~ APOE_all + T40_Gcar + family_history_AD + Age_Baseline + Sex + BMI_Y08andY12andY14_mean + AlcoholY08 + SmokingY08 + Townsend + GreenTea_mean + (1 | Assessment_0)")
+model_rsFMRI <- lmer(formula, data = df_clean, REML = FALSE)
+
+# Generate predicted values
+model_rows <- complete.cases(model.frame(model_rsFMRI))
+predicted_values_rsFMRI <- rep(NA, nrow(df_clean))
+predicted_values_rsFMRI[model_rows] <- predict(model_rsFMRI, re.form = NA)
+
+# Add predicted values to df_clean
+df_clean$predicted_rsFMRI_Component7 <- predicted_values_rsFMRI
+
+# Create the plot
+plot_title <- "Primary Visual Network (IC8)"
+p <- ggplot(df_clean, aes(x = StandTea_mean, y = predicted_rsFMRI_Component7)) +
+    geom_point(shape = 21, size = 24, stroke = 2, colour = "black", fill = "gray") +
+    geom_smooth(method = "lm", color = "black", size = 2, se = FALSE) +
+    labs(
+        title = plot_title,
+        x = "Green Tea Consumption (Cups/Mugs/250ml)",
+        y = "Network Connectivity Strength (Z-score)"
+    ) +
+    theme_minimal() +
+    theme(
+        text = element_text(size = 48, family = "Calibri"),
+        axis.title = element_text(size = 60, family = "Calibri"),
+        plot.title = element_text(size = 60, hjust = 0.5),
+        axis.text = element_text(size = 60),
+        panel.border = element_rect(colour = "black", fill = NA, size = 10),
+        axis.ticks = element_line(size = 10),
+        axis.ticks.length = unit(48, "pt"),
+        legend.text = element_text(size = 48),
+        legend.position = c(0.8, 0.8),
+        legend.background = element_blank(),
+        legend.key = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()
+    )
+
+# Save the plot
+file_path <- "C:/Users/timothy/OneDrive/Documents/ISU/food_project/output/tea_coffee/figures/maineffects_Gtea_rsFMRI_Component8.tiff"
+ggsave(file_path, plot = p, width = 22.22, height = 27.78, units = "in", dpi = 72)
+
+rm(list=ls())
+
 # IC7,14,21 with tea
 # IC 21 first
 df<-read.csv(file = 'C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\data\\data_for_test\\tea_coffee.csv')
