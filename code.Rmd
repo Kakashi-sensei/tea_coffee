@@ -1219,7 +1219,7 @@ library(dplyr)
 df <- read.csv(file = 'C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\data\\data_for_test\\tea_coffee.csv')
 
 # List of required columns for the analysis
-required_columns_tea <- c("rsfMRI_Component7", "rsfMRI_Component11", "rsfMRI_Component14", 
+required_columns_tea <- c("rsfMRI_Component4", "rsfMRI_Component7", "rsfMRI_Component8", "rsfMRI_Component11", "rsfMRI_Component14", 
                           "rsfMRI_Component21", "rsfMRI_Component12", "Assessment_0", "APOE_all", 
                           "T40_Gcar", "family_history_AD", "Age_Baseline", "Sex", "SmokingY08", 
                           "AlcoholY08", "BMI_Y08andY12andY14_mean", "Townsend", "StandTea_mean")
@@ -1239,8 +1239,24 @@ df$T40_Gcar <- as.factor(df$T40_Gcar)
 df$family_history_AD <- as.factor(df$family_history_AD)
 df$Assessment_0 <- as.factor(df$Assessment_0)  # For random effects
 
+DataSet1_APOE0 <- subset(df, APOE_all == 0)
+
+# Check the levels of each factor variable (particularly those involved in the model)
+table(DataSet1_APOE0$Sex)
+table(DataSet1_APOE0$family_history_AD)
+table(DataSet1_APOE0$T40_Gcar)
+
+model_APOE0 <- lmer(rsfMRI_Component7 ~ StandTea_mean + T40_Gcar + family_history_AD + Age_Baseline +
+                    Sex + SmokingY08 + AlcoholY08 + BMI_Y08andY12andY14_mean + Townsend + 
+                    (1 | Assessment_0), data = DataSet1_APOE0, REML=FALSE)
+
+# View summary for APOE_all = 0
+summary(model_APOE0)
+
+
+
 # List of rsfMRI components to loop through
-rsfMRI_components <- c("rsfMRI_Component7", "rsfMRI_Component11", "rsfMRI_Component14", 
+rsfMRI_components <- c("rsfMRI_Component4", "rsfMRI_Component7", "rsfMRI_Component8", "rsfMRI_Component11", "rsfMRI_Component14", 
                        "rsfMRI_Component21", "rsfMRI_Component12")
 
 # Initialize an empty data frame to store results
@@ -1337,3 +1353,18 @@ write.csv(all_results_df, "C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_pr
           na = '', row.names = FALSE)
 rm(list = ls())
 ```
+
+```{r}
+#Mancova
+install.packages("car")
+library(car)
+df<-read.csv(file = 'C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\data\\data_for_test\\tea_coffee.csv')
+# Example with dependent variables as neural networks (Z-scores)
+mancova_model <- manova(cbind(rsfMRI_Component4, rsfMRI_Component7, rsfMRI_Component18, rsfMRI_Component11, rsfMRI_Component12, rsfMRI_Component14, rsfMRI_Component21) ~ FilterCoffee_mean + GreenTea_mean +  StandTea_mean+ SmokingY08 + AlcoholY08 + BMI_Y08andY12andY14_mean + Townsend, data = df)
+
+
+
+# Check omnibus test results
+summary(mancova_model, test = "Wilks")
+```
+
