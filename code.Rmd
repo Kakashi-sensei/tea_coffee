@@ -1375,7 +1375,7 @@ df <- read.csv(file_path)
 
 library(ggplot2)
 
-# Use Okabe-Ito color-blind-friendly palette
+# Use Okabe-Ito color-blind-friendly palette for the bars
 color_blind_palette <- c("FilterCoffee_mean" = "#E69F00",  # Orange
                          "StandTea_mean" = "#56B4E9",      # Sky Blue
                          "GreenTea_mean" = "#009E73")     # Green
@@ -1387,8 +1387,8 @@ df$Error_Lower <- ifelse(df$Estimate < 0, df$Estimate - df$Std_Error / 2, df$Est
 # Create the bar graph
 ggplot(df, aes(x = Dependent_Variable, y = Estimate, fill = Test_Variable)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
-  geom_errorbar(aes(ymin = Error_Lower, ymax = Error_Upper),
-                width = 0.2, position = position_dodge(width = 0.8)) +
+  geom_errorbar(aes(ymin = Error_Lower, ymax = Error_Upper), 
+                width = 0.2, color = "black", position = position_dodge(width = 0.8)) +  # Error bars in black
   scale_fill_manual(values = color_blind_palette) +
   labs(title = "Effect Size by rsfMRI Components and Beverages",
        x = "rsfMRI Components",
@@ -1396,14 +1396,14 @@ ggplot(df, aes(x = Dependent_Variable, y = Estimate, fill = Test_Variable)) +
        fill = "Beverage") +
   theme_minimal() +
   theme(
-    text = element_text(size = 48, family = "Calibri"),
-    axis.title = element_text(size = 60, family = "Calibri"),
+    text = element_text(size = 48, color = "black", family = "Calibri"),
+    axis.title = element_text(size = 60, color = "black", family = "Calibri"),
     plot.title = element_text(size = 60, hjust = 0.5),
     axis.text = element_text(size = 60),
     panel.border = element_rect(colour = "black", fill = NA, linewidth = 10),
     axis.ticks = element_line(linewidth = 10),
     axis.ticks.length = unit(48, "pt"),
-    legend.text = element_text(size = 48),
+    legend.text = element_text(size = 48, color = "black"),  # Legend text in black
     legend.position = c(0.7, 0.85),
     legend.background = element_blank(),
     legend.key = element_blank(),
@@ -1412,7 +1412,7 @@ ggplot(df, aes(x = Dependent_Variable, y = Estimate, fill = Test_Variable)) +
   )
 
 # Save the plot as a TIFF file with larger dimensions
-ggsave("C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\output\\tea_coffee\\results\\maineffect_plot_half_error.tiff",
+ggsave("C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\output\\tea_coffee\\results\\maineffect_plot_black_error_legend.tiff",
        width = 22.22, height = 27.78, units = "in", dpi = 72)
 
 ```
