@@ -1380,6 +1380,16 @@ color_blind_palette <- c("FilterCoffee_mean" = "#E69F00",  # Orange
                          "StandTea_mean" = "#56B4E9",      # Sky Blue
                          "GreenTea_mean" = "#009E73")     # Green
 
+# Reorder the x-axis categories
+df$Dependent_Variable <- factor(df$Dependent_Variable, 
+                                 levels = c("rsfMRI_Component4", 
+                                            "rsfMRI_Component7", 
+                                            "rsfMRI_Component8", 
+                                            "rsfMRI_Component11", 
+                                            "rsfMRI_Component12", 
+                                            "rsfMRI_Component14", 
+                                            "rsfMRI_Component21"))
+
 # Add columns for conditional error bar positions
 df$Error_Upper <- ifelse(df$Estimate > 0, df$Estimate + df$Std_Error / 2, df$Estimate)
 df$Error_Lower <- ifelse(df$Estimate < 0, df$Estimate - df$Std_Error / 2, df$Estimate)
@@ -1388,7 +1398,7 @@ df$Error_Lower <- ifelse(df$Estimate < 0, df$Estimate - df$Std_Error / 2, df$Est
 ggplot(df, aes(x = Dependent_Variable, y = Estimate, fill = Test_Variable)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
   geom_errorbar(aes(ymin = Error_Lower, ymax = Error_Upper), 
-                width = 0.2, color = "black", position = position_dodge(width = 0.8)) +  # Error bars in black
+                width = 0.8, color = "black", linewidth = 5, position = position_dodge(width = 0.8)) +  # Error bars in black with 10pt thickness
   scale_fill_manual(values = color_blind_palette) +
   labs(title = "Effect Size by rsfMRI Components and Beverages",
        x = "rsfMRI Components",
@@ -1396,10 +1406,11 @@ ggplot(df, aes(x = Dependent_Variable, y = Estimate, fill = Test_Variable)) +
        fill = "Beverage") +
   theme_minimal() +
   theme(
-    text = element_text(size = 48, color = "black", family = "Calibri"),
-    axis.title = element_text(size = 60, color = "black", family = "Calibri"),
+    text = element_text(size = 48, family = "Calibri"),
+    axis.title = element_text(size = 60, family = "Calibri"),
     plot.title = element_text(size = 60, hjust = 0.5),
-    axis.text = element_text(size = 60),
+    axis.text.x = element_text(size = 60, angle = 45, hjust = 1),  # Larger size and 45-degree rotation
+    axis.text.y = element_text(size = 60),
     panel.border = element_rect(colour = "black", fill = NA, linewidth = 10),
     axis.ticks = element_line(linewidth = 10),
     axis.ticks.length = unit(48, "pt"),
@@ -1412,7 +1423,6 @@ ggplot(df, aes(x = Dependent_Variable, y = Estimate, fill = Test_Variable)) +
   )
 
 # Save the plot as a TIFF file with larger dimensions
-ggsave("C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\output\\tea_coffee\\results\\maineffect_plot_black_error_legend.tiff",
+ggsave("C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\output\\tea_coffee\\results\\maineffect_plot_black_error_legend_10pt.tiff",
        width = 22.22, height = 27.78, units = "in", dpi = 72)
-
 ```
