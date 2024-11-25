@@ -1368,3 +1368,51 @@ mancova_model <- manova(cbind(rsfMRI_Component4, rsfMRI_Component7, rsfMRI_Compo
 summary(mancova_model, test = "Wilks")
 ```
 
+```{r}
+# Load the data
+file_path <- "C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\output\\tea_coffee\\results\\maineffect.csv"
+df <- read.csv(file_path)
+
+library(ggplot2)
+
+# Use Okabe-Ito color-blind-friendly palette
+color_blind_palette <- c("FilterCoffee_mean" = "#E69F00",  # Orange
+                         "StandTea_mean" = "#56B4E9",      # Sky Blue
+                         "GreenTea_mean" = "#009E73")     # Green
+
+# Add columns for conditional error bar positions
+df$Error_Upper <- ifelse(df$Estimate > 0, df$Estimate + df$Std_Error / 2, df$Estimate)
+df$Error_Lower <- ifelse(df$Estimate < 0, df$Estimate - df$Std_Error / 2, df$Estimate)
+
+# Create the bar graph
+ggplot(df, aes(x = Dependent_Variable, y = Estimate, fill = Test_Variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
+  geom_errorbar(aes(ymin = Error_Lower, ymax = Error_Upper),
+                width = 0.2, position = position_dodge(width = 0.8)) +
+  scale_fill_manual(values = color_blind_palette) +
+  labs(title = "Effect Size by rsfMRI Components and Beverages",
+       x = "rsfMRI Components",
+       y = "Estimate",
+       fill = "Beverage") +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 48, family = "Calibri"),
+    axis.title = element_text(size = 60, family = "Calibri"),
+    plot.title = element_text(size = 60, hjust = 0.5),
+    axis.text = element_text(size = 60),
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 10),
+    axis.ticks = element_line(linewidth = 10),
+    axis.ticks.length = unit(48, "pt"),
+    legend.text = element_text(size = 48),
+    legend.position = c(0.7, 0.85),
+    legend.background = element_blank(),
+    legend.key = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+# Save the plot as a TIFF file with larger dimensions
+ggsave("C:\\Users\\timothy\\OneDrive\\Documents\\ISU\\food_project\\output\\tea_coffee\\results\\maineffect_plot_half_error.tiff",
+       width = 22.22, height = 27.78, units = "in", dpi = 72)
+
+```
